@@ -122,28 +122,6 @@ public class ConverterApplication {
                 System.out.println("|                [Volte sempre!]                |");
                 System.out.println("|_______________________________________________|");
         }
-//        if (option == 1) {
-//
-//        } else if (option == 2) {
-//
-//
-//
-//        } else if (option == 3) {
-//
-//
-//
-//        } else if (option == 4) {
-//
-//
-//
-//        } else if (option == 5) {
-//
-//
-//
-//        } else {
-//
-//        }
-    }
 
     private static String fahrenheit(float c) {
         return String.format(Locale.ENGLISH, "%.2f", (c * 1.8f) + 32);
