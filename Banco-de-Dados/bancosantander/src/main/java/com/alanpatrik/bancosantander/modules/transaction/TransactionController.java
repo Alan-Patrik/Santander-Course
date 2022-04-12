@@ -21,7 +21,7 @@ public class TransactionController {
 
     @GetMapping("/pesquisarMes")
     public ResponseEntity<HttpResponseDTO<Page<TransactionResponseDTO>>> searchByMonth(
-            @RequestParam int month,
+            @RequestParam String month,
             @RequestParam int page,
             @RequestParam(required = false, defaultValue = "3") int size,
             @RequestParam(required = false, defaultValue = "Asc") String sort

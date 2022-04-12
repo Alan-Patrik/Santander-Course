@@ -28,10 +28,14 @@ public class UserResponseBuilderDTO {
     @Builder.Default
     private LocalDateTime updateDate = LocalDateTime.now();
 
-    @Builder.Default
-    private List<Account> accounts = null;
+//    @Builder.Default
+//    private List<Account> accounts = null;
+
+//    public UserResponseDTO buildResponseDTO() {
+//        return new UserResponseDTO(id, cpf, name, descriptionDate, updateDate, accounts);
+//    }
 
     public UserResponseDTO buildResponseDTO() {
-        return new UserResponseDTO(id, cpf, name, descriptionDate, updateDate, accounts);
+        return new UserResponseDTO(id, cpf, name, descriptionDate, updateDate);
     }
 }

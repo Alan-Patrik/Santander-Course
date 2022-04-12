@@ -97,7 +97,7 @@ public class TransactionServiceTest {
 
         var transactionResponseDTO = transactionService.create(transactionRequestDTO);
 
-        var returnedTransaction = transactionService.searchByMonth(04, 0, 5, "Asc");
+        var returnedTransaction = transactionService.searchByMonth("04", 0, 5, "Asc");
 
         Assertions.assertEquals(transactionResponseDTO.getTransactionType(), returnedTransaction.getContent().get(0).getTransactionType());
         Assertions.assertEquals("Alan Patrik", returnedTransaction.getContent().get(0).getDestination().getUser().getName());
@@ -105,7 +105,7 @@ public class TransactionServiceTest {
 
     @Test
     public void pesquisando_transacao_por_periodo_com_numero_entre_1_e_12_deve_passar() throws Exception {
-        var returnedTransaction = transactionService.searchByMonth(4, 0, 5, "Asc");
+        var returnedTransaction = transactionService.searchByMonth("04", 0, 5, "Asc");
 
         Assertions.assertEquals(new ArrayList<>(), returnedTransaction.getContent());
     }
@@ -113,7 +113,7 @@ public class TransactionServiceTest {
     @Test
     public void pesquisando_transacao_por_periodo_com_numero_menor_do_que_1_ou_maior_do_que_12_nao_deve_passar() throws Exception {
         Exception exception = Assertions.assertThrows(CustomBadRequestException.class, () -> {
-            transactionService.searchByMonth(13, 0, 5, "Asc");
+            transactionService.searchByMonth("13", 0, 5, "Asc");
         });
 
         String expectedMessage = "Ops... Aconteceu um erro. Por favor, insira um MÊS válido! Ex(4) => 'ABRIL'";

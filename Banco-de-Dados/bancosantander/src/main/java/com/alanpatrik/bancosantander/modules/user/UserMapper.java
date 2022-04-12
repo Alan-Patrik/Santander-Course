@@ -16,7 +16,7 @@ public interface UserMapper {
         userResponseDTO.setName(user.getName());
         userResponseDTO.setDescriptionDate(user.getDescriptionDate());
         userResponseDTO.setUpdateDate(user.getUpdateDate());
-        userResponseDTO.setAccounts(user.getAccounts());
+//        userResponseDTO.setAccounts(user.getAccounts());
 
         return userResponseDTO;
     }

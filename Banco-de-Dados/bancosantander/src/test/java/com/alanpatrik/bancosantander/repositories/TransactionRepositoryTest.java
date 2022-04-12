@@ -101,7 +101,7 @@ public class TransactionRepositoryTest {
 
         PageRequest pageRequest = PageRequest.of(0, 5, Sort.Direction.ASC, "numero");
 
-        var returnedTransaction = transactionRepository.searchByMonth(04, pageRequest);
+        var returnedTransaction = transactionRepository.searchByMonth("04", pageRequest);
 
         Assertions.assertEquals(transaction.getTransactionType(), returnedTransaction.getContent().get(0).getTransactionType());
         Assertions.assertEquals("Alan Patrik", returnedTransaction.getContent().get(0).getAccount().getUser().getName());

@@ -8,7 +8,7 @@ import org.springframework.data.domain.Page;
 
 public interface TransactionService {
 
-    Page<TransactionResponseDTO> searchByMonth(int month, int page, int size, String sort) throws CustomBadRequestException;
+    Page<TransactionResponseDTO> searchByMonth(String month, int page, int size, String sort) throws CustomBadRequestException;
 
     Page<TransactionResponseDTO> getAll(int page, int size, String sort);
 

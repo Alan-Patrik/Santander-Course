@@ -27,14 +27,15 @@ public class TransactionServiceImpl implements TransactionService {
     @Autowired
     private AccountRepository accountRepository;
 
-    private void monthValidator(int month) throws CustomBadRequestException {
-        if (month < 1 || month > 12) {
+    private void monthValidator(String month) throws CustomBadRequestException {
+        int parser = Integer.parseInt(month);
+        if (parser < 1 || parser > 12) {
             throw new CustomBadRequestException("Por favor, insira um MÊS válido! Ex(4) => 'ABRIL'");
         }
     }
 
     @Override
-    public Page<TransactionResponseDTO> searchByMonth(int month, int page, int size, String sort) throws CustomBadRequestException {
+    public Page<TransactionResponseDTO> searchByMonth(String month, int page, int size, String sort) throws CustomBadRequestException {
         monthValidator(month);
 
         PageRequest pageRequest = PageRequest.of(
