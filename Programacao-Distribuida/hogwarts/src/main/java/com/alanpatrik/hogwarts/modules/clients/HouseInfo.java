@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.OneToMany;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -18,8 +17,6 @@ public class InfoClass {
     private String name;
     private String animal;
     private String founder;
-
-    @OneToMany
-    private List<Values> valuesList = new ArrayList<>();
+    private List<Values> values = new ArrayList<>();
 
 }
