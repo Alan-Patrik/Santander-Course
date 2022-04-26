@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Entity
@@ -20,9 +21,11 @@ public class Student {
     @GeneratedValue
     private UUID id;
 
+    @NotNull(message = "Campo name é obrigatório!")
     @Column(name = "nome")
     private String name;
 
+    @NotNull(message = "Campo serie é obrigatório!")
     @Column(name = "serie")
     private String series;
 
