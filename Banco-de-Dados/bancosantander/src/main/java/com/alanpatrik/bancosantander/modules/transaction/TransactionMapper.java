@@ -1,6 +1,7 @@
 package com.alanpatrik.bancosantander.modules.transaction;
 
 import com.alanpatrik.bancosantander.modules.account.Account;
+import com.alanpatrik.bancosantander.modules.clients.dto.TransactionDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionAccountDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionRequestDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionResponseDTO;
@@ -62,6 +63,19 @@ public interface TransactionMapper {
         transactionResponseDTO.setAgency(transaction.getAgency());
         transactionResponseDTO.setDescriptionDate(transaction.getDescriptionDate());
         transactionResponseDTO.setUpdateDate(transaction.getUpdateDate());
+        transactionResponseDTO.setDestination(transactionAccountDTO);
+
+        return transactionResponseDTO;
+    }
+
+    default TransactionResponseDTO fromTransactionDTOToTransactionResponseDTO(TransactionDTO transactionDTO, TransactionAccountDTO transactionAccountDTO) {
+        TransactionResponseDTO transactionResponseDTO = new TransactionResponseDTO();
+        transactionResponseDTO.setId(transactionDTO.getId());
+        transactionResponseDTO.setNumber(transactionDTO.getNumber());
+        transactionResponseDTO.setAgency(transactionDTO.getAgency());
+        transactionResponseDTO.setDescriptionDate(transactionDTO.getDescriptionDate());
+        transactionResponseDTO.setValue(transactionDTO.getValue());
+        transactionResponseDTO.setTransactionType(transactionDTO.getTransactionType());
         transactionResponseDTO.setDestination(transactionAccountDTO);
 
         return transactionResponseDTO;

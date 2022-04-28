@@ -16,7 +16,6 @@ public interface UserMapper {
         userResponseDTO.setName(user.getName());
         userResponseDTO.setDescriptionDate(user.getDescriptionDate());
         userResponseDTO.setUpdateDate(user.getUpdateDate());
-//        userResponseDTO.setAccounts(user.getAccounts());
 
         return userResponseDTO;
     }
@@ -28,12 +27,4 @@ public interface UserMapper {
 
         return userAccountDTO;
     }
-
-//    default User toModel(UserAccountDTO userAccountDTO) {
-//        User user = new User();
-//        user.setCpf(userAccountDTO.getCpf());
-//        user.setName(userAccountDTO.getName());
-//
-//        return user;
-//    }
 }

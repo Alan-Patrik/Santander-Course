@@ -1,13 +1,19 @@
 package com.alanpatrik.bancosantander.modules.transaction;
 
 import com.alanpatrik.bancosantander.exceptions.CustomBadRequestException;
+import com.alanpatrik.bancosantander.exceptions.CustomInternalServerException;
 import com.alanpatrik.bancosantander.exceptions.CustomNotFoundException;
-import com.alanpatrik.bancosantander.modules.account.Account;
 import com.alanpatrik.bancosantander.modules.account.AccountRepository;
+import com.alanpatrik.bancosantander.modules.clients.GetInfoTransaction;
+import com.alanpatrik.bancosantander.modules.clients.dto.TransactionDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionAccountDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionRequestDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionResponseDTO;
+import com.alanpatrik.bancosantander.modules.user.User;
 import com.alanpatrik.bancosantander.modules.user.UserMapper;
+import com.alanpatrik.bancosantander.modules.user.UserRepository;
+import com.alanpatrik.bancosantander.modules.user.dto.UserAccountDTO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -15,11 +21,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
+@RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
 
+    private final UserRepository userRepository;
     private final UserMapper userMapper = UserMapper.INSTANCE;
     private final TransactionMapper transactionMapper = TransactionMapper.INSTANCE;
+    private final GetInfoTransaction getInfoTransaction;
+    private final String URL_POST_TRANSACTION = "http://localhost:8090/transacao";
 
     @Autowired
     private TransactionRepository transactionRepository;
@@ -31,26 +43,6 @@ public class TransactionServiceImpl implements TransactionService {
         int parser = Integer.parseInt(month);
         if (parser < 1 || parser > 12) {
             throw new CustomBadRequestException("Por favor, insira um MÊS válido! Ex(4) => 'ABRIL'");
-        }
-    }
-
-    @Override
-    public Page<TransactionResponseDTO> searchByMonth(String month, int page, int size, String sort) throws CustomBadRequestException {
-        monthValidator(month);
-
-        PageRequest pageRequest = PageRequest.of(
-                page,
-                size
-        );
-
-        if (sort.equalsIgnoreCase("Asc")) {
-            return transactionRepository.searchByMonth(month, pageRequest.withSort(Sort.Direction.ASC, "numero")).map(transactionMapper::toDTO);
-
-        } else if (sort.equalsIgnoreCase("Desc")) {
-            return transactionRepository.searchByMonth(month, pageRequest.withSort(Sort.Direction.DESC, "numero")).map(transactionMapper::toDTO);
-
-        } else {
-            return transactionRepository.searchByMonth(month, pageRequest).map(transactionMapper::toDTO);
         }
     }
 
@@ -73,148 +65,44 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public TransactionResponseDTO create(TransactionRequestDTO transactionRequestDTO) throws CustomNotFoundException, CustomBadRequestException {
-        Account account = accountRepository.findById(transactionRequestDTO.getAccountId()).orElseThrow(() -> new CustomNotFoundException(
-                String.format("Conta com o id %s não foi encontrada.", transactionRequestDTO.getAccountId())
-        ));
+    public TransactionResponseDTO create(TransactionRequestDTO transactionRequestDTO)
+            throws CustomNotFoundException, CustomBadRequestException, CustomInternalServerException {
+        TransactionDTO transactionDTO = getInfoTransaction.execute(URL_POST_TRANSACTION, transactionRequestDTO);
 
-        Account senderAccount = accountRepository.findByNumber(transactionRequestDTO.getNumber()).orElseThrow(() -> new CustomNotFoundException(
-                String.format("Conta com o numero %s não foi encontrada.", transactionRequestDTO.getNumber())
-        ));
+        var senderAccount = accountRepository.findByNumber(transactionDTO.getNumber());
+        var destinationAccount = accountRepository.findById(transactionDTO.getAccountId());
 
-        Transaction receivedTransaction = new Transaction();
-        TransactionValidator transactionValidator = new TransactionValidator();
-
-        switch (transactionRequestDTO.getTransactionType()) {
+        switch (transactionDTO.getTransactionType()) {
             case TRANSFERENCIA:
-                transactionValidator = transferValidator(senderAccount, account, transactionRequestDTO);
-
-                accountRepository.save(transactionValidator.getSenderAccount());
-                accountRepository.save(transactionValidator.getDestinationAccount());
-                receivedTransaction = transactionRepository.save(transactionValidator.getTransaction());
+                senderAccount.get().setBalance(senderAccount.get().getBalance() - transactionDTO.getValue());
+                destinationAccount.get().setBalance(destinationAccount.get().getBalance() + transactionDTO.getValue());
+                accountRepository.save(senderAccount.get());
+                accountRepository.save(destinationAccount.get());
                 break;
 
             case DEPOSITO:
-                transactionValidator = depositValidator(senderAccount, account, transactionRequestDTO);
-
-                accountRepository.save(transactionValidator.getSenderAccount());
-                accountRepository.save(transactionValidator.getDestinationAccount());
-                receivedTransaction = transactionRepository.save(transactionValidator.getTransaction());
+                destinationAccount.get().setBalance(destinationAccount.get().getBalance() + transactionDTO.getValue());
+                accountRepository.save(destinationAccount.get());
                 break;
 
             case SAQUE:
-                transactionValidator = withdrawValidator(senderAccount, account, transactionRequestDTO);
-
-                accountRepository.save(transactionValidator.getSenderAccount());
-                accountRepository.save(transactionValidator.getDestinationAccount());
-                receivedTransaction = transactionRepository.save(transactionValidator.getTransaction());
+                destinationAccount.get().setBalance(destinationAccount.get().getBalance() - transactionDTO.getValue());
+                accountRepository.save(destinationAccount.get());
                 break;
+
+            default:
+                throw new CustomBadRequestException("Essa transação não existe!");
         }
 
-        TransactionAccountDTO transactionAccountDTO = transactionMapper.toTransactionAccountDTO(
-                transactionValidator.getDestinationAccount(),
-                userMapper.toUserAccountDTO(transactionValidator.getDestinationAccount().getUser()));
+        TransactionAccountDTO transactionAccountDTO =  new TransactionAccountDTO();
+        transactionAccountDTO.setNumber(transactionDTO.getNumber());
+        transactionAccountDTO.setAgency(transactionDTO.getAgency());
+        transactionAccountDTO.setAccountType(destinationAccount.get().getAccountType());
+        transactionAccountDTO.setUser(userMapper.toUserAccountDTO(destinationAccount.get().getUser()));
 
-        return transactionMapper.toTransactionResponseDTO(receivedTransaction, transactionAccountDTO);
-    }
+        TransactionResponseDTO transactionResponseDTO = transactionMapper
+                .fromTransactionDTOToTransactionResponseDTO(transactionDTO, transactionAccountDTO);
 
-    private TransactionValidator transferValidator(
-            Account senderAccount, Account destinationAccount, TransactionRequestDTO transactionRequestDTO
-    ) throws CustomBadRequestException {
-        Transaction receivedTransaction = new Transaction();
-
-        if (senderAccount.getNumber().equals(destinationAccount.getNumber())) {
-            throw new CustomBadRequestException("Operação recusada. Você não pode efetuar uma transferência para si mesmo!");
-        }
-
-        if (senderAccount.getBalance() <= 0) {
-            throw new CustomBadRequestException("Saldo insuficiente!");
-        }
-
-        receivedTransaction.setValue(transactionRequestDTO.getValue());
-        receivedTransaction.setTransactionType(transactionRequestDTO.getTransactionType());
-        receivedTransaction.setNumber(transactionRequestDTO.getNumber());
-        receivedTransaction.setAgency(transactionRequestDTO.getAgency());
-        receivedTransaction.setAccount(destinationAccount);
-
-        senderAccount.setBalance(senderAccount.getBalance() - transactionRequestDTO.getValue());
-        destinationAccount.setBalance(destinationAccount.getBalance() + transactionRequestDTO.getValue());
-
-        TransactionValidator transactionValidator = new TransactionValidator();
-        transactionValidator.setSenderAccount(senderAccount);
-        transactionValidator.setDestinationAccount(destinationAccount);
-        transactionValidator.setTransaction(receivedTransaction);
-
-        return transactionValidator;
-    }
-
-    private TransactionValidator depositValidator(
-            Account senderAccount, Account destinationAccount, TransactionRequestDTO transactionRequestDTO
-    ) throws CustomBadRequestException {
-        Transaction receivedTransaction = new Transaction();
-
-        if (transactionRequestDTO.getValue() <= 0) {
-            throw new CustomBadRequestException("Não é possível depositar valor menor ou igual a 0!");
-        }
-
-        if (senderAccount.getNumber().equals(destinationAccount.getNumber())) {
-            receivedTransaction.setValue(transactionRequestDTO.getValue());
-            receivedTransaction.setTransactionType(transactionRequestDTO.getTransactionType());
-            receivedTransaction.setNumber(transactionRequestDTO.getNumber());
-            receivedTransaction.setAgency(transactionRequestDTO.getAgency());
-            receivedTransaction.setAccount(senderAccount);
-
-            destinationAccount.setBalance(destinationAccount.getBalance() + transactionRequestDTO.getValue());
-
-        } else if (senderAccount.getNumber() != destinationAccount.getNumber()) {
-            receivedTransaction.setValue(transactionRequestDTO.getValue());
-            receivedTransaction.setTransactionType(transactionRequestDTO.getTransactionType());
-            receivedTransaction.setNumber(transactionRequestDTO.getNumber());
-            receivedTransaction.setAgency(transactionRequestDTO.getAgency());
-            receivedTransaction.setAccount(destinationAccount);
-
-            senderAccount.setBalance(senderAccount.getBalance() - transactionRequestDTO.getValue());
-            destinationAccount.setBalance(destinationAccount.getBalance() + transactionRequestDTO.getValue());
-        }
-
-        TransactionValidator transactionValidator = new TransactionValidator();
-        transactionValidator.setSenderAccount(senderAccount);
-        transactionValidator.setDestinationAccount(destinationAccount);
-        transactionValidator.setTransaction(receivedTransaction);
-
-        return transactionValidator;
-    }
-
-    private TransactionValidator withdrawValidator(
-            Account senderAccount, Account destinationAccount, TransactionRequestDTO transactionRequestDTO
-    ) throws CustomBadRequestException {
-        Transaction receivedTransaction = new Transaction();
-
-        if (senderAccount.getNumber() != destinationAccount.getNumber()) {
-            throw new CustomBadRequestException("Operação recusada. Você não pode efetuar saque de outra conta!");
-        }
-
-        if (senderAccount.getBalance() <= 0) {
-            throw new CustomBadRequestException("Saldo insuficiente!");
-        }
-
-        if (transactionRequestDTO.getValue() > senderAccount.getBalance()) {
-            throw new CustomBadRequestException("Operação recusada. Você não pode sacar um valor acima do seu saldo.");
-        }
-
-        receivedTransaction.setValue(transactionRequestDTO.getValue());
-        receivedTransaction.setTransactionType(transactionRequestDTO.getTransactionType());
-        receivedTransaction.setNumber(transactionRequestDTO.getNumber());
-        receivedTransaction.setAgency(transactionRequestDTO.getAgency());
-        receivedTransaction.setAccount(senderAccount);
-
-        senderAccount.setBalance(senderAccount.getBalance() - transactionRequestDTO.getValue());
-
-        TransactionValidator transactionValidator = new TransactionValidator();
-        transactionValidator.setSenderAccount(senderAccount);
-        transactionValidator.setDestinationAccount(destinationAccount);
-        transactionValidator.setTransaction(receivedTransaction);
-
-        return transactionValidator;
+        return transactionResponseDTO;
     }
 }

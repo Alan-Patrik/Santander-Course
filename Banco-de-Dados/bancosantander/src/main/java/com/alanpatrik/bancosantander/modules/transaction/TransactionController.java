@@ -1,6 +1,7 @@
 package com.alanpatrik.bancosantander.modules.transaction;
 
 import com.alanpatrik.bancosantander.exceptions.CustomBadRequestException;
+import com.alanpatrik.bancosantander.exceptions.CustomInternalServerException;
 import com.alanpatrik.bancosantander.exceptions.CustomNotFoundException;
 import com.alanpatrik.bancosantander.http.HttpResponseDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionRequestDTO;
@@ -19,20 +20,20 @@ public class TransactionController {
     @Autowired
     private TransactionServiceImpl transactionService;
 
-    @GetMapping("/pesquisarMes")
-    public ResponseEntity<HttpResponseDTO<Page<TransactionResponseDTO>>> searchByMonth(
-            @RequestParam String month,
-            @RequestParam int page,
-            @RequestParam(required = false, defaultValue = "3") int size,
-            @RequestParam(required = false, defaultValue = "Asc") String sort
-    ) throws CustomBadRequestException {
-        Page<TransactionResponseDTO> transactionResponseDTOPage = transactionService.searchByMonth(month, page, size, sort);
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new HttpResponseDTO<>(HttpStatus.OK, transactionResponseDTOPage));
-    }
+//    @GetMapping("/pesquisarMes")
+//    public ResponseEntity<HttpResponseDTO<Page<TransactionResponseDTO>>> searchByMonth(
+//            @RequestParam String month,
+//            @RequestParam int page,
+//            @RequestParam(required = false, defaultValue = "3") int size,
+//            @RequestParam(required = false, defaultValue = "Asc") String sort
+//    ) throws CustomBadRequestException {
+//        Page<TransactionResponseDTO> transactionResponseDTOPage = transactionService.searchByMonth(month, page, size, sort);
+//
+//        return ResponseEntity
+//                .status(HttpStatus.OK)
+//                .contentType(MediaType.APPLICATION_JSON)
+//                .body(new HttpResponseDTO<>(HttpStatus.OK, transactionResponseDTOPage));
+//    }
 
     @GetMapping
     public ResponseEntity<HttpResponseDTO<Page<TransactionResponseDTO>>> getAll(
@@ -50,7 +51,7 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<HttpResponseDTO<TransactionResponseDTO>> create(
             @RequestBody TransactionRequestDTO transactionRequestDTO
-    ) throws CustomNotFoundException, CustomBadRequestException {
+    ) throws CustomNotFoundException, CustomBadRequestException, CustomInternalServerException {
         TransactionResponseDTO receivedTransactionResponseDTO = transactionService.create(transactionRequestDTO);
 
         return ResponseEntity

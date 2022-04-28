@@ -35,9 +35,9 @@ public class StudentServiceImpl implements StudentService {
         studentDTO.setName(student.getName());
         studentDTO.setSeries(student.getSeries());
 
-//        if (getInfoHouse.execute(URL + student.getHomeKey()).equals(null)) {
-//            throw new CustomInternalServerException("A chave da casa retornou vazia");
-//        }
+        if (getInfoHouse.execute(URL + student.getHomeKey()).equals(null)) {
+            throw new CustomInternalServerException("A chave da casa retornou vazia");
+        }
 
         HouseInfo houseInfo = getInfoHouse.execute(URL + student.getHomeKey());
 
