@@ -3,25 +3,18 @@ package com.alanpatrik.bancosantander.modules.transaction;
 import com.alanpatrik.bancosantander.enums.TransactionType;
 import com.alanpatrik.bancosantander.modules.account.Account;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
-import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
-@ToString
-@Getter
-@Setter
+@Data
 @Entity
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -56,10 +49,6 @@ public class Transaction {
     @CreatedDate
     @Column(name = "data_criacao")
     private LocalDateTime descriptionDate;
-
-    @LastModifiedDate
-    @Column(name = "data_atualizacao")
-    private LocalDateTime updateDate;
 
     @ManyToOne
     @JoinColumn(name = "conta_id")

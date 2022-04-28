@@ -5,11 +5,13 @@ import com.alanpatrik.bancosantander.exceptions.CustomInternalServerException;
 import com.alanpatrik.bancosantander.exceptions.CustomNotFoundException;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionRequestDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionResponseDTO;
-import org.springframework.data.domain.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import java.util.List;
 
 public interface TransactionService {
 
-    Page<TransactionResponseDTO> getAll(int page, int size, String sort);
+    List<TransactionResponseDTO> getAll() throws CustomInternalServerException, JsonProcessingException;
 
     TransactionResponseDTO create(TransactionRequestDTO transactionRequestDTO) throws CustomNotFoundException, CustomBadRequestException, CustomInternalServerException;
 }

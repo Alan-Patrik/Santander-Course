@@ -5,23 +5,19 @@ import com.alanpatrik.bancosantander.exceptions.CustomInternalServerException;
 import com.alanpatrik.bancosantander.exceptions.CustomNotFoundException;
 import com.alanpatrik.bancosantander.modules.account.AccountRepository;
 import com.alanpatrik.bancosantander.modules.clients.GetInfoTransaction;
+import com.alanpatrik.bancosantander.modules.clients.GetTransactionList;
 import com.alanpatrik.bancosantander.modules.clients.dto.TransactionDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionAccountDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionRequestDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionResponseDTO;
-import com.alanpatrik.bancosantander.modules.user.User;
 import com.alanpatrik.bancosantander.modules.user.UserMapper;
 import com.alanpatrik.bancosantander.modules.user.UserRepository;
-import com.alanpatrik.bancosantander.modules.user.dto.UserAccountDTO;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +27,9 @@ public class TransactionServiceImpl implements TransactionService {
     private final UserMapper userMapper = UserMapper.INSTANCE;
     private final TransactionMapper transactionMapper = TransactionMapper.INSTANCE;
     private final GetInfoTransaction getInfoTransaction;
+    private final GetTransactionList getTransactionList;
     private final String URL_POST_TRANSACTION = "http://localhost:8090/transacao";
+    private final String URL_GET_TRANSACTION_LIST = "http://localhost:8090/transacao";
 
     @Autowired
     private TransactionRepository transactionRepository;
@@ -39,29 +37,25 @@ public class TransactionServiceImpl implements TransactionService {
     @Autowired
     private AccountRepository accountRepository;
 
-    private void monthValidator(String month) throws CustomBadRequestException {
-        int parser = Integer.parseInt(month);
-        if (parser < 1 || parser > 12) {
-            throw new CustomBadRequestException("Por favor, insira um MÊS válido! Ex(4) => 'ABRIL'");
-        }
-    }
-
     @Override
-    public Page<TransactionResponseDTO> getAll(int page, int size, String sort) {
-        PageRequest pageRequest = PageRequest.of(
-                page,
-                size
-        );
+    public List<TransactionResponseDTO> getAll() throws CustomInternalServerException, JsonProcessingException {
+        List<TransactionDTO> transactionDTOList = getTransactionList.execute(URL_GET_TRANSACTION_LIST);
+        TransactionAccountDTO transactionAccountDTO =  new TransactionAccountDTO();
 
-        if (sort.equalsIgnoreCase("Asc")) {
-            return transactionRepository.findAll(pageRequest.withSort(Sort.Direction.ASC, "number")).map(transactionMapper::toDTO);
+        for (TransactionDTO transactionDTO : transactionDTOList) {
+            var account = accountRepository.findById(transactionDTO.getAccountId());
 
-        } else if (sort.equalsIgnoreCase("Desc")) {
-            return transactionRepository.findAll(pageRequest.withSort(Sort.Direction.DESC, "number")).map(transactionMapper::toDTO);
+            transactionAccountDTO.setNumber(transactionDTO.getNumber());
+            transactionAccountDTO.setAgency(transactionDTO.getAgency());
+            transactionAccountDTO.setAccountType(account.get().getAccountType());
+            transactionAccountDTO.setUser(userMapper.toUserAccountDTO(account.get().getUser()));
 
-        } else {
-            return new PageImpl<>(transactionRepository.findAll(), pageRequest, size).map(transactionMapper::toDTO);
         }
+
+        List<TransactionResponseDTO> transactionResponseDTOList = transactionMapper.toResponseDTO(
+                transactionDTOList, transactionAccountDTO);
+
+        return transactionResponseDTOList;
     }
 
     @Override

@@ -30,22 +30,6 @@ public interface AccountMapper {
         return accountResponseDTO;
     }
 
-//    default Account fromAccountResponseDTOToModel(AccountResponseDTO accountResponseDTO) {
-//        Account account = new Account();
-//        account.setId(accountResponseDTO.getId());
-//        account.setNumber(accountResponseDTO.getNumber());
-//        account.setAgency(accountResponseDTO.getAgency());
-//        account.setDescriptionDate(accountResponseDTO.getDescriptionDate());
-//        account.setUpdateDate(accountResponseDTO.getUpdateDate());
-//        account.setBalance(accountResponseDTO.getBalance());
-//        account.setAccountType(accountResponseDTO.getAccountType());
-//
-//        User user = USER_INSTANCE.toModel(accountResponseDTO.getUser());
-//        account.setUser(user);
-//
-//        return account;
-//    }
-
     default AccountResponseDTO fromDTOToAccountResponseDTO(Account account, UserAccountDTO userAccountDTO) {
         AccountResponseDTO accountResponseDTO = new AccountResponseDTO();
         accountResponseDTO.setId(account.getId());

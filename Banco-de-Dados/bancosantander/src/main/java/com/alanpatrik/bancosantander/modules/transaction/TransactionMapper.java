@@ -3,12 +3,15 @@ package com.alanpatrik.bancosantander.modules.transaction;
 import com.alanpatrik.bancosantander.modules.account.Account;
 import com.alanpatrik.bancosantander.modules.clients.dto.TransactionDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionAccountDTO;
-import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionRequestDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionResponseDTO;
 import com.alanpatrik.bancosantander.modules.user.UserMapper;
 import com.alanpatrik.bancosantander.modules.user.dto.UserAccountDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Mapper
 public interface TransactionMapper {
@@ -32,17 +35,6 @@ public interface TransactionMapper {
 
         return transactionResponseDTO;
     }
-
-//    default TransactionRequestDTO toTransactionRequestDTO(Transaction transaction) {
-//        TransactionRequestDTO transactionRequestDTO = new TransactionRequestDTO();
-//        transactionRequestDTO.setValue(transaction.getValue());
-//        transactionRequestDTO.setTransactionType(transaction.getTransactionType());
-//        transactionRequestDTO.setNumber(transaction.getNumber());
-//        transactionRequestDTO.setAgency(transaction.getAgency());
-//        transactionRequestDTO.setAccountId(transaction.getAccount().getId());
-//
-//        return transactionRequestDTO;
-//    }
 
     default TransactionAccountDTO toTransactionAccountDTO(Account account, UserAccountDTO userAccountDTO) {
         TransactionAccountDTO transactionAccountDTO = new TransactionAccountDTO();
@@ -68,7 +60,8 @@ public interface TransactionMapper {
         return transactionResponseDTO;
     }
 
-    default TransactionResponseDTO fromTransactionDTOToTransactionResponseDTO(TransactionDTO transactionDTO, TransactionAccountDTO transactionAccountDTO) {
+    default TransactionResponseDTO fromTransactionDTOToTransactionResponseDTO(
+            TransactionDTO transactionDTO, TransactionAccountDTO transactionAccountDTO) {
         TransactionResponseDTO transactionResponseDTO = new TransactionResponseDTO();
         transactionResponseDTO.setId(transactionDTO.getId());
         transactionResponseDTO.setNumber(transactionDTO.getNumber());
@@ -79,5 +72,26 @@ public interface TransactionMapper {
         transactionResponseDTO.setDestination(transactionAccountDTO);
 
         return transactionResponseDTO;
+    }
+
+    default List<TransactionResponseDTO> toResponseDTO(
+            List<TransactionDTO> transactionDTOList, TransactionAccountDTO transactionAccountDTO
+    ){
+        List<TransactionResponseDTO> transactionResponseDTOList = new ArrayList<>();
+
+        for (TransactionDTO transactionDTO : transactionDTOList) {
+            TransactionResponseDTO transactionResponseDTO = new TransactionResponseDTO();
+            transactionResponseDTO.setId(transactionDTO.getId());
+            transactionResponseDTO.setValue(transactionDTO.getValue());
+            transactionResponseDTO.setTransactionType(transactionDTO.getTransactionType());
+            transactionResponseDTO.setNumber(transactionDTO.getNumber());
+            transactionResponseDTO.setAgency(transactionDTO.getAgency());
+            transactionResponseDTO.setDescriptionDate(transactionDTO.getDescriptionDate());
+            transactionResponseDTO.setDestination(transactionAccountDTO);
+
+            transactionResponseDTOList.add(transactionResponseDTO);
+        }
+
+        return transactionResponseDTOList;
     }
 }
