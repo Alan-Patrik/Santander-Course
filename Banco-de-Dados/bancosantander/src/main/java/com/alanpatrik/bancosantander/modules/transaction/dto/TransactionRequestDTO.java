@@ -1,11 +1,11 @@
 package com.alanpatrik.bancosantander.modules.transaction.dto;
 
 import com.alanpatrik.bancosantander.enums.TransactionType;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TransactionRequestDTO {
 
     private double value;

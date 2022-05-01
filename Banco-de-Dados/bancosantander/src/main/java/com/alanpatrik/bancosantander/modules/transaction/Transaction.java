@@ -36,13 +36,11 @@ public class Transaction {
 
     @NotNull(message = "Campo NÚMERO é obrigatório!")
     @Min(value = 2, message = "No campo NÚMERO deve ser no mínimo 2 caracteres.")
-//    @Max(value = 9, message = "No máximo 9 caracteres.")
     @Column(name = "numero")
     private int number;
 
     @NotNull(message = "Campo AGÊNCIA é obrigatório!")
     @Min(value = 2, message = "No campo AGÊNCIA deve ser no mínimo 2 caracteres.")
-//    @Max(value = 4, message = "No máximo 4 caracteres.")
     @Column(name = "agencia")
     private int agency;
 

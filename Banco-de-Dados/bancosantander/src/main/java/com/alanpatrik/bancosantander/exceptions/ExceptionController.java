@@ -1,11 +1,13 @@
 package com.alanpatrik.bancosantander.exceptions;
 
 import com.alanpatrik.bancosantander.http.HttpExceptionDTO;
+import org.json.JSONObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpClientErrorException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
@@ -27,6 +29,29 @@ public class ExceptionController {
     public ResponseEntity<HttpExceptionDTO> handleCustomBadRequestException(
             HttpServletRequest http, CustomBadRequestException exception
     ) {
+        return ResponseEntity
+                .status(BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("exception-name", exception.toString().split(":")[0])
+                .header("error-code", BAD_REQUEST.getReasonPhrase())
+                .header("error-message", exception.getMessage())
+                .body(HttpExceptionDTO
+                        .builder()
+                        .timestamp(dateFormat.format(System.currentTimeMillis()))
+                        .code(BAD_REQUEST.value())
+                        .exceptionName(exception.toString().split(":")[0])
+                        .path(http.getRequestURI())
+                        .message(exception.getMessage())
+                        .build());
+    }
+
+    @ResponseStatus(BAD_REQUEST)
+    @ExceptionHandler(HttpClientErrorException.class)
+    public ResponseEntity<HttpExceptionDTO> HttpClientErrorExceptionBadRequest(
+            HttpServletRequest http, HttpClientErrorException exception
+    ) {
+//        JSONObject jsonObject = new JSONObject(exception.getMessage());
+
         return ResponseEntity
                 .status(BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_JSON)

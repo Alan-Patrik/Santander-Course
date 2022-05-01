@@ -3,100 +3,93 @@ package com.alanpatrik.bancosantander.modules.transaction;
 import com.alanpatrik.bancosantander.exceptions.CustomBadRequestException;
 import com.alanpatrik.bancosantander.exceptions.CustomInternalServerException;
 import com.alanpatrik.bancosantander.exceptions.CustomNotFoundException;
+import com.alanpatrik.bancosantander.modules.account.Account;
 import com.alanpatrik.bancosantander.modules.account.AccountRepository;
-import com.alanpatrik.bancosantander.modules.clients.GetInfoTransaction;
+import com.alanpatrik.bancosantander.modules.account.AccountServiceImpl;
+import com.alanpatrik.bancosantander.modules.account.dto.AccountRequestDTO;
 import com.alanpatrik.bancosantander.modules.clients.GetTransactionList;
-import com.alanpatrik.bancosantander.modules.clients.dto.TransactionDTO;
+import com.alanpatrik.bancosantander.modules.clients.dto.TransactionDTOList;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionAccountDTO;
+import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionRequestDTO;
 import com.alanpatrik.bancosantander.modules.transaction.dto.TransactionResponseDTO;
 import com.alanpatrik.bancosantander.modules.user.UserMapper;
-import com.alanpatrik.bancosantander.modules.user.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-public class TransactionServiceImpl implements TransactionService {
+public class TransactionServiceImpl {
 
-    private final UserRepository userRepository;
+    private final KafkaTemplate<Object, TransactionDTO> kafkaTemplate;
     private final UserMapper userMapper = UserMapper.INSTANCE;
     private final TransactionMapper transactionMapper = TransactionMapper.INSTANCE;
-    private final GetInfoTransaction getInfoTransaction;
     private final GetTransactionList getTransactionList;
-    private final String URL_POST_TRANSACTION = "http://localhost:8090/transacao";
     private final String URL_GET_TRANSACTION_LIST = "http://localhost:8090/transacao";
+    private final AccountServiceImpl accountService;
+    private final AccountRepository accountRepository;
 
-    @Autowired
-    private TransactionRepository transactionRepository;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Override
     public List<TransactionResponseDTO> getAll() throws CustomInternalServerException, JsonProcessingException {
-        List<TransactionDTO> transactionDTOList = getTransactionList.execute(URL_GET_TRANSACTION_LIST);
-        TransactionAccountDTO transactionAccountDTO =  new TransactionAccountDTO();
+        List<TransactionDTOList> transactionDTOList = getTransactionList.execute(URL_GET_TRANSACTION_LIST);
+        TransactionAccountDTO transactionAccountDTO = new TransactionAccountDTO();
 
-        for (TransactionDTO transactionDTO : transactionDTOList) {
-            var account = accountRepository.findById(transactionDTO.getAccountId());
+        for (TransactionDTOList transactionList : transactionDTOList) {
+            var account = accountRepository.findById(transactionList.getDestinationAccount().getId());
 
-            transactionAccountDTO.setNumber(transactionDTO.getNumber());
-            transactionAccountDTO.setAgency(transactionDTO.getAgency());
+            transactionAccountDTO.setNumber(account.get().getNumber());
+            transactionAccountDTO.setAgency(account.get().getAgency());
             transactionAccountDTO.setAccountType(account.get().getAccountType());
             transactionAccountDTO.setUser(userMapper.toUserAccountDTO(account.get().getUser()));
-
         }
 
-        List<TransactionResponseDTO> transactionResponseDTOList = transactionMapper.toResponseDTO(
+        List<TransactionResponseDTO> transactionResponseDTOList = transactionMapper.toResponseDTOList(
                 transactionDTOList, transactionAccountDTO);
 
         return transactionResponseDTOList;
     }
 
-    @Override
-    public TransactionResponseDTO create(TransactionRequestDTO transactionRequestDTO)
-            throws CustomNotFoundException, CustomBadRequestException, CustomInternalServerException {
-        TransactionDTO transactionDTO = getInfoTransaction.execute(URL_POST_TRANSACTION, transactionRequestDTO);
+    public void create(String topic, TransactionRequestDTO transactionRequestDTO) throws CustomNotFoundException {
+        Account senderAccount = accountRepository.findByNumber(
+                transactionRequestDTO.getNumber()
+        ).orElseThrow(() -> new CustomNotFoundException(
+                String.format("Conta com o numero %s, não foi encontrada", transactionRequestDTO.getNumber())));
 
-        var senderAccount = accountRepository.findByNumber(transactionDTO.getNumber());
-        var destinationAccount = accountRepository.findById(transactionDTO.getAccountId());
+        Account destinationAccount = accountRepository.findById(
+                transactionRequestDTO.getAccountId()
+        ).orElseThrow(() -> new CustomNotFoundException(
+                String.format("Conta com o id %s, não foi encontrada", transactionRequestDTO.getAccountId())));
 
-        switch (transactionDTO.getTransactionType()) {
-            case TRANSFERENCIA:
-                senderAccount.get().setBalance(senderAccount.get().getBalance() - transactionDTO.getValue());
-                destinationAccount.get().setBalance(destinationAccount.get().getBalance() + transactionDTO.getValue());
-                accountRepository.save(senderAccount.get());
-                accountRepository.save(destinationAccount.get());
-                break;
+        TransactionDTO transactionDTO = new TransactionDTO();
+        transactionDTO.setValue(transactionRequestDTO.getValue());
+        transactionDTO.setTransactionType(transactionRequestDTO.getTransactionType());
+        transactionDTO.setSenderAccount(senderAccount);
+        transactionDTO.setDestinationAccount(destinationAccount);
 
-            case DEPOSITO:
-                destinationAccount.get().setBalance(destinationAccount.get().getBalance() + transactionDTO.getValue());
-                accountRepository.save(destinationAccount.get());
-                break;
+        kafkaTemplate.send(topic, transactionDTO);
+    }
 
-            case SAQUE:
-                destinationAccount.get().setBalance(destinationAccount.get().getBalance() - transactionDTO.getValue());
-                accountRepository.save(destinationAccount.get());
-                break;
+    @KafkaListener(topics = "SalvarTransacao", groupId = "MicroServicoSalvarTransacao")
+    private void execute(ConsumerRecord<String, TransactionDTO> consumerRecord) throws CustomBadRequestException, CustomNotFoundException {
 
-            default:
-                throw new CustomBadRequestException("Essa transação não existe!");
-        }
+        log.info("Resposta transação => {}", consumerRecord.value());
 
-        TransactionAccountDTO transactionAccountDTO =  new TransactionAccountDTO();
-        transactionAccountDTO.setNumber(transactionDTO.getNumber());
-        transactionAccountDTO.setAgency(transactionDTO.getAgency());
-        transactionAccountDTO.setAccountType(destinationAccount.get().getAccountType());
-        transactionAccountDTO.setUser(userMapper.toUserAccountDTO(destinationAccount.get().getUser()));
+        TransactionDTO transactionDTO = consumerRecord.value();
 
-        TransactionResponseDTO transactionResponseDTO = transactionMapper
-                .fromTransactionDTOToTransactionResponseDTO(transactionDTO, transactionAccountDTO);
+        AccountRequestDTO senderAccount = new AccountRequestDTO();
+        senderAccount.setBalance(transactionDTO.getSenderAccount().getBalance());
 
-        return transactionResponseDTO;
+        AccountRequestDTO destinationAccount = new AccountRequestDTO();
+        destinationAccount.setBalance(transactionDTO.getDestinationAccount().getBalance());
+
+        accountService.update(transactionDTO.getSenderAccount().getId(), senderAccount);
+        accountService.update(transactionDTO.getDestinationAccount().getId(), destinationAccount);
     }
 }

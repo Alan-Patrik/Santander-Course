@@ -1,6 +1,5 @@
 package com.alanpatrik.bancosantander.modules.transaction;
 
-import com.alanpatrik.bancosantander.exceptions.CustomBadRequestException;
 import com.alanpatrik.bancosantander.exceptions.CustomInternalServerException;
 import com.alanpatrik.bancosantander.exceptions.CustomNotFoundException;
 import com.alanpatrik.bancosantander.http.HttpResponseDTO;
@@ -33,14 +32,16 @@ public class TransactionController {
     }
 
     @PostMapping
-    public ResponseEntity<HttpResponseDTO<TransactionResponseDTO>> create(
+    public ResponseEntity<HttpResponseDTO<String>> create(
             @RequestBody TransactionRequestDTO transactionRequestDTO
-    ) throws CustomNotFoundException, CustomBadRequestException, CustomInternalServerException {
-        TransactionResponseDTO receivedTransactionResponseDTO = transactionService.create(transactionRequestDTO);
+    ) throws CustomNotFoundException {
+        transactionService.create("EfetuarTransacao", transactionRequestDTO);
+
+        String response = transactionRequestDTO.getTransactionType().toString() + " efetuada com sucesso!";
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new HttpResponseDTO<>(HttpStatus.OK, receivedTransactionResponseDTO));
+                .body(new HttpResponseDTO<>(HttpStatus.OK, response));
     }
 }
