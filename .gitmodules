@@ -1,0 +1,3 @@
+[submodule "Banco-de-Dados/bancosantander/microservice-transaction-receipt"]
+	path = Banco-de-Dados/bancosantander/microservice-transaction-receipt
+	url = https://github.com/Alan-Patrik/microservice-transactions-receipt.git
