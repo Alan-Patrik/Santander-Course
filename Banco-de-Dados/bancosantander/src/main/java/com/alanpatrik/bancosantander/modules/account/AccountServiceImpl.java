@@ -19,14 +19,14 @@ import java.util.Optional;
 @Service
 public class AccountServiceImpl implements AccountService {
 
+    private final AccountMapper accountMapper = AccountMapper.INSTANCE;
+    private final UserMapper userMapper = UserMapper.INSTANCE;
+
     @Autowired
     private AccountRepository accountRepository;
 
     @Autowired
     private UserRepository userRepository;
-
-    private final AccountMapper accountMapper = AccountMapper.INSTANCE;
-    private final UserMapper userMapper = UserMapper.INSTANCE;
 
     @Override
     public Account verifyIfAccountExists(Long id) throws CustomNotFoundException {

@@ -1,7 +1,6 @@
 package com.alanpatrik.bancosantander.exceptions;
 
 import com.alanpatrik.bancosantander.http.HttpExceptionDTO;
-import org.json.JSONObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,7 +12,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -50,7 +48,6 @@ public class ExceptionController {
     public ResponseEntity<HttpExceptionDTO> HttpClientErrorExceptionBadRequest(
             HttpServletRequest http, HttpClientErrorException exception
     ) {
-//        JSONObject jsonObject = new JSONObject(exception.getMessage());
 
         return ResponseEntity
                 .status(BAD_REQUEST)
@@ -75,7 +72,7 @@ public class ExceptionController {
     ) {
 
         var list = exception.getConstraintViolations().stream().map(constraintViolation ->
-                    constraintViolation.getMessage()
+                constraintViolation.getMessage()
         ).collect(Collectors.toList());
 
         return ResponseEntity

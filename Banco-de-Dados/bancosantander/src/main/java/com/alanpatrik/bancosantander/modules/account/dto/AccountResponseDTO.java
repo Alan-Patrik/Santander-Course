@@ -2,15 +2,13 @@ package com.alanpatrik.bancosantander.modules.account.dto;
 
 import com.alanpatrik.bancosantander.enums.AccountType;
 import com.alanpatrik.bancosantander.modules.user.dto.UserAccountDTO;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class AccountResponseDTO {
 
     private Long id;

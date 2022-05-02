@@ -2,11 +2,9 @@ package com.alanpatrik.bancosantander.modules.account;
 
 import com.alanpatrik.bancosantander.modules.account.dto.AccountRequestDTO;
 import com.alanpatrik.bancosantander.modules.account.dto.AccountResponseDTO;
-import com.alanpatrik.bancosantander.modules.user.User;
 import com.alanpatrik.bancosantander.modules.user.UserMapper;
 import com.alanpatrik.bancosantander.modules.user.dto.UserAccountDTO;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 @Mapper
